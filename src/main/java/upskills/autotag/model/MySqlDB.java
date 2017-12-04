@@ -1,15 +1,23 @@
 package upskills.autotag.model;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-
-import lle.crud.dao.impl.HbnTradeDao;
+import lle.crud.data.util.DataHibernateUtil;
+import lle.crud.model.Issue;
 import lle.crud.model.Trade;
-
-import java.util.Map.Entry;
+import lle.crud.service.IssueService;
+import lle.crud.service.TradeService;
 
 
 public class MySqlDB {
 
+	static TradeService tradeService = DataHibernateUtil.getTradeService();
+	static IssueService issueService = DataHibernateUtil.getIssueService();
+	public static void InsertTrade(Trade t)
+	{
+		tradeService.createTrade(t);
+	}
+	
+	public static void InsertIssue(Issue i)
+	{
+		
+	}
 }

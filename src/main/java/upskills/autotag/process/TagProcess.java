@@ -2,12 +2,11 @@ package upskills.autotag.process;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 
@@ -20,6 +19,11 @@ import lle.crud.model.Issue;
 import lle.crud.model.Trade;
 import lle.crud.service.TradeIssueMapService;
 import lle.crud.service.TradeService;
+import ups.mongo.fileprocess.MongoDataUtil;
+import ups.mongo.model.AutoTagOutput;
+import ups.mongo.model.ReconOutput;
+import ups.mongo.service.AutoTagService;
+import ups.mongo.service.ReconOutputService;
 import upskills.autotag.model.HeaderMap;
 import upskills.autotag.model.TaggedObj;
 import upskills.autotag.resource.IConstants;
@@ -33,11 +37,12 @@ public class TagProcess {
 	static TradeService tradeService = DataHibernateUtil.getTradeService();
 	static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static List<String> exportHeader = new ArrayList<String>(Arrays.asList(IConstants.EXPORT_HEADER_NEUTRAL));
+	static String reportId, reportingDate;
 
 	public static void main(String[] args) {
 		String[] headers = new String[] { "TRN_NB" };
 		try {
-			GetTagByKeyColumn(Arrays.asList(headers));
+			getTagByKeyColumn(Arrays.asList(headers));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -72,12 +77,26 @@ public class TagProcess {
 		return mm_table;
 	}
 
+	private static List<String[]> readFromDb(String reportId, String reportingDate)
+	{
+		List<String[]> mm_result = new ArrayList<String[]>();
+		MongoDataUtil service = new MongoDataUtil(ReconOutputService.class);
+		ReconOutput ro = (ReconOutput) service.getByReportIdAndReportingDate(reportId, reportingDate).get(0);
+		mm_result = ro.getRows().stream().map(o->o.split("!")).collect(Collectors.toList());
+		return mm_result;
+		
+	}
+	public static void execute(List<String> key_headers) throws Exception
+	{
+		getTagByKeyColumn(key_headers);
+	}
+	
 	/** put key column to get corresponding issue tag
 	 * @param key_headers
 	 * @throws Exception
 	 */
 	@SuppressWarnings({ "static-access", "rawtypes" })
-	public static void GetTagByKeyColumn(List<String> key_headers) throws Exception {
+	public static void getTagByKeyColumn(List<String> key_headers) throws Exception {
 		List<String[]> mm_result = new ArrayList<>();
 		List<TaggedObj> mm_table = new ArrayList<>();
 		HashMap<String, String> key_val = null;
@@ -87,7 +106,7 @@ public class TagProcess {
 		utl.set_splitter(IConstants.CSV_SPLIT);
 
 		ExcelReader reader = new ExcelReader();
-		mm_result = reader.readData(IConstants.FILE_PATH, utl);
+		mm_result =  readFromDb(reportId, reportingDate) ;  //reader.readData(IConstants.FILE_PATH, utl);
 
 		mm_table = extractMismatchColumn(mm_result);
 
@@ -141,12 +160,26 @@ public class TagProcess {
 		exportHeader.addAll(1, key_headers);
 		output.add(exportHeader.toArray(new String[0]));
 		output.addAll(mm_table.parallelStream().map(m->m.toString().split(";")).collect(Collectors.toList()));
-		
+		int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
+		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
 		// Format excel option
 		ExcelFormat format = new ExcelFormat();
 		format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
+		format.mergeCell(0, 0, 0, pivot_start-1);
+		
+		
+		//Export to file
 		utl.set_format(format);
 		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
 
+		//Save to MongoDB
+		/*MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
+		AutoTagOutput ao = new AutoTagOutput();
+		ao.setGeneratedDate(new Date());
+		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\"), IConstants.FILE_PATH.lastIndexOf(".")));
+		ao.setReportName(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\"), IConstants.FILE_PATH.lastIndexOf(".")));
+		ao.setHeaders(exportHeader);
+		ao.setRows(output.stream().map(o->String.join("!", o)).collect(Collectors.toList()));
+		service.saveToMongoDB(ao);*/
 	}
 }

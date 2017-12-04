@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+
 /**
  * @author LuanNgu
  *
@@ -124,6 +125,19 @@ public class TaggedObj {
 		sb.append(String.join(";", _issues));
 		
 		return sb.toString();
+	}
+	
+	public <T> void setPropertybyName(String prop_name, T value)
+	{
+		if (prop_name.toLowerCase().equals("selected"))
+			this.set_selected((boolean) value);
+		else if (prop_name.toLowerCase().equals("field"))
+			this.set_field_name((String) value);
+		else if (prop_name.toLowerCase().equals("systematic"))
+			this.set_systematic((boolean) value);
+		else if (prop_name.toLowerCase().compareTo("issue")>=0)
+			this._issues.add((String) value);
+		else this._disp_column.put(prop_name, (String) value);
 	}
 	
 	
