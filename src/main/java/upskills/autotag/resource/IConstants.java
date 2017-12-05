@@ -6,8 +6,8 @@ public class IConstants {
 	public static String USER_NAME = "root";
 	public static String PASSWORD = "root";
 	public static String DB_NAME = "recondb";
-	public static String CSV_SPLIT = ";";
-	public static String FILE_PATH = "import/TestResult.csv"; //Scene2_MX2__20171024_165930.xls
+	public static String CSV_SPLIT = ",";
+	public static String FILE_PATH = "import/IRD_PL_1__20171107_201223.csv"; //Scene2_MX2__20171024_165930.xls mx2_test2__20171026_125441
 	public static String HEADER_TRADE = "TRADE_NB";
 	public static String HEADER_FAMILY = "TRN_FMLY";
 	public static String HEADER_GROUP = "TRN_GRP";

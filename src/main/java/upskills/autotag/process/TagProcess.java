@@ -104,10 +104,11 @@ public class TagProcess {
 		
 		ExcelUtils utl = ExcelUtils.getInstance();
 		utl.set_splitter(IConstants.CSV_SPLIT);
+		utl.set_sheet_id(2);
 
 		ExcelReader reader = new ExcelReader();
-		mm_result =  readFromDb(reportId, reportingDate) ;  //reader.readData(IConstants.FILE_PATH, utl);
-
+		mm_result =  reader.readData(IConstants.FILE_PATH, utl);
+//		mm_result =  readFromDb(reportId, reportingDate) ;
 		mm_table = extractMismatchColumn(mm_result);
 
 		for (Iterator iterator = mm_table.iterator(); iterator.hasNext();) {
@@ -148,6 +149,7 @@ public class TagProcess {
 				}
 			} else {
 				// TODO implement for NOT existed Trade
+				System.out.print("Trade "+ String.join(";", trades.stream().map(t->t.getTradeNb()).collect(Collectors.toList())) + " not existed");
 			}
 		}
 		List<String[]> output  = new ArrayList<String[]>();
@@ -173,13 +175,13 @@ public class TagProcess {
 		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
 
 		//Save to MongoDB
-		/*MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
+		MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
 		AutoTagOutput ao = new AutoTagOutput();
 		ao.setGeneratedDate(new Date());
-		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\"), IConstants.FILE_PATH.lastIndexOf(".")));
-		ao.setReportName(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\"), IConstants.FILE_PATH.lastIndexOf(".")));
+		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\")+1, IConstants.FILE_PATH.lastIndexOf(".")));
+		ao.setReportName(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\")+1, IConstants.FILE_PATH.lastIndexOf(".")));
 		ao.setHeaders(exportHeader);
-		ao.setRows(output.stream().map(o->String.join("!", o)).collect(Collectors.toList()));
-		service.saveToMongoDB(ao);*/
+		ao.setRows(output.subList(1, output.size()-1).stream().map(o->String.join("!", o)).collect(Collectors.toList()));
+		service.saveToMongoDB(ao);
 	}
 }

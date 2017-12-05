@@ -18,6 +18,6 @@ public class MySqlDB {
 	
 	public static void InsertIssue(Issue i)
 	{
-		
+		issueService.createIssue(i);
 	}
 }

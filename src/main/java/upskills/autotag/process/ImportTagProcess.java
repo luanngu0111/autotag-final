@@ -25,11 +25,13 @@ import upskills.autotag.resource.IConstants;
 public class ImportTagProcess {
 
 	private static List<TaggedObj> _tag_data_lst = new ArrayList<TaggedObj>();
+	private static List<TradeIssueMap> _trade_issue_lst = new ArrayList<TradeIssueMap>();
 	private static TradeService tradeService = DataHibernateUtil.getTradeService();
 	private static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static String _report_id;
 	static String _report_date;
 	private static MongoDataUtil _autotag_svc;
+
 	public enum Source {
 		EXCEL, DATABASE
 	}
@@ -38,8 +40,7 @@ public class ImportTagProcess {
 		execute(Source.EXCEL);
 	}
 
-	private static List<TaggedObj> readData(List<String[]> tagData)
-	{
+	private static List<TaggedObj> readData(List<String[]> tagData) {
 		String[] header = tagData.get(1);
 		List<TaggedObj> tagList = new ArrayList<TaggedObj>();
 		int size = tagData.size();
@@ -57,6 +58,7 @@ public class ImportTagProcess {
 		}
 		return tagList;
 	}
+
 	/**
 	 * @param filename
 	 * @return
@@ -64,15 +66,15 @@ public class ImportTagProcess {
 	private static List<TaggedObj> readDatafromExcel(String filename) {
 		ExcelReader reader = new ExcelReader();
 		ExcelUtils utl = ExcelUtils.getNewInstance();
-		utl.set_sheet_id(2);
+		utl.set_sheet_id(0);
 		List<String[]> tagData = reader.readData(filename, utl);
 		return readData(tagData);
 	}
 
 	private static List<TaggedObj> readDatafromDB(String reportId, String reportingDate) {
 		AutoTagOutput tags = (AutoTagOutput) _autotag_svc.getByReportIdAndReportingDate(reportId, reportingDate).get(0);
-		List<String[]> tagData = tags.getRows().stream().map(row->row.split("!")).collect(Collectors.toList());
-		
+		List<String[]> tagData = tags.getRows().stream().map(row -> row.split("!")).collect(Collectors.toList());
+
 		return readData(tagData);
 
 	}
@@ -82,21 +84,36 @@ public class ImportTagProcess {
 			List<Trade> trade_lst = tradeService.getTradeByCriteria(obj.get_disp_column());
 			for (Trade trade : trade_lst) {
 				for (String s : obj.get_issues()) {
-					TradeIssueMapKey tr_is_map = new TradeIssueMapKey(trade.getTradeNb(), Integer.parseInt(s));
-					tradeIssueService.createTradeIssueMap(new TradeIssueMap(tr_is_map, new Date()));
+					String mod_s = null;
+					try {
+						mod_s = s.substring(0, s.lastIndexOf("."));
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						mod_s = s;
+					} finally {
+
+						TradeIssueMapKey tr_is_map = new TradeIssueMapKey(trade.getTradeNb(), Integer.parseInt(mod_s));
+						_trade_issue_lst.add(new TradeIssueMap(tr_is_map, new Date()));
+					}
+
 				}
 			}
 
 		}
+
+		/*
+		 * Save to db TODO invoke batch insertion function
+		 */
+		tradeIssueService.createTradeIssueMap(_trade_issue_lst);
 	}
 
 	public static void execute(Source source) {
 		switch (source) {
 		case EXCEL:
-			readDatafromExcel(IConstants.EXPORT_EXCEL_FILE);
+			_tag_data_lst = readDatafromExcel(IConstants.EXPORT_EXCEL_FILE);
 			break;
 		case DATABASE:
-			readDatafromDB(_report_id,_report_date);
+			_tag_data_lst = readDatafromDB(_report_id, _report_date);
 			break;
 		default:
 			break;
