@@ -1,5 +1,7 @@
 package upskills.autotag.process;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -20,13 +22,12 @@ import lle.crud.model.Trade;
 import lle.crud.service.TradeIssueMapService;
 import lle.crud.service.TradeService;
 import ups.mongo.fileprocess.MongoDataUtil;
-import ups.mongo.model.AutoTagOutput;
 import ups.mongo.model.ReconOutput;
-import ups.mongo.service.AutoTagService;
 import ups.mongo.service.ReconOutputService;
 import upskills.autotag.model.HeaderMap;
 import upskills.autotag.model.TaggedObj;
 import upskills.autotag.resource.IConstants;
+import upskills.autotag.*;
 
 /**
  * @author LuanNgu
@@ -111,47 +112,63 @@ public class TagProcess {
 //		mm_result =  readFromDb(reportId, reportingDate) ;
 		mm_table = extractMismatchColumn(mm_result);
 
-		for (Iterator iterator = mm_table.iterator(); iterator.hasNext();) {
-			TaggedObj taggedObj = (TaggedObj) iterator.next();
-			List<Trade> trades = new ArrayList<>();
-			List<Trade> org_trades=null;
-			List<Trade> trade_issues = new ArrayList<>();
-
-			key_val = (HashMap<String, String>) taggedObj.get_disp_column().entrySet().stream().filter(k->mod_key_head.contains(k.getKey())).collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-			taggedObj.set_disp_column(key_val);
-			trades = tradeService.getTradeByCriteria(key_val);
-			trades  = trades.stream().filter(t -> t.getIssueList() != null || t.getIssueList().size() > 0)
-					.collect(Collectors.toList()); // SELECT TRADE WHICH HAVE ISSUE
-			org_trades = new ArrayList<Trade>(trades);
+		DateFormat df = new SimpleDateFormat("YYYY MM dd HH:mm:ss.SSSS");
+		int count=0;
+		
+		for (int i=1; i<=32; i++){
+			int pos_start = mm_result.size()/32*(i-1);
+			int pos_end = mm_result.size()/32*i-1;
 			
-			if (trades != null && trades.size() > 0) {
-				for (int i =0 ; i < trades.size(); i++) {
-					Trade trade = new Trade(trades.get(i));
-					trade.setIssueList(trade.getIssueList().stream()
-							.filter(is -> is.getField().equalsIgnoreCase(taggedObj.get_field_name()))
-							.collect(Collectors.toList()));
-					if (trade.getIssueList().size() > 0)
-						trade_issues.add(trade);
-				}
-
-				/*
-				 * Key and Field name exists in DB
-				 */
-				if (trade_issues.size() > 0) {
-					List<Issue> issues = trade_issues.stream().map(Trade::getIssueList).flatMap(x->x.stream()).collect(Collectors.toList());
-					taggedObj.set_issues(
-							issues.stream().map(is -> String.valueOf(is.getIssueId())).collect(Collectors.toList()));
-					taggedObj.set_systematic(true);
-				} else { // Key and Field name NOT exists in DB
-					List<Issue> issues = org_trades.stream().map(Trade::getIssueList).flatMap(x->x.stream()).collect(Collectors.toList());
-					taggedObj.set_issues(
-							issues.stream().map(is -> String.valueOf(is.getIssueId())).collect(Collectors.toList()));
-				}
-			} else {
-				// TODO implement for NOT existed Trade
-				System.out.print("Trade "+ String.join(";", trades.stream().map(t->t.getTradeNb()).collect(Collectors.toList())) + " not existed");
-			}
+			new ThreadTest(mm_table.subList(pos_start, pos_end), mod_key_head).run();
 		}
+			
+		
+//		for (Iterator iterator = mm_table.iterator(); iterator.hasNext();) {
+//			TaggedObj taggedObj = (TaggedObj) iterator.next();
+//			List<Trade> trades = new ArrayList<>();
+//			List<Trade> org_trades=null;
+//			List<Trade> trade_issues = new ArrayList<>();
+//
+//			System.out.println("--Saving key ... "+df.format(new Date()));
+//			key_val = (HashMap<String, String>) taggedObj.get_disp_column().entrySet().stream().filter(k->mod_key_head.contains(k.getKey())).collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+//			taggedObj.set_disp_column(key_val);
+//			
+//			System.out.println("--Get Trades ... "+df.format(new Date()));
+//			trades = tradeService.getTradeByCriteria(key_val);
+//			
+//			System.out.println("--Select valid trades... "+df.format(new Date()));
+//			trades  = trades.stream().filter(t -> t.getIssueList() != null || t.getIssueList().size() > 0)
+//					.collect(Collectors.toList()); // SELECT TRADE WHICH HAVE ISSUE
+//			org_trades = new ArrayList<Trade>(trades);
+//			System.out.println("--Starting to tag ... "+df.format(new Date()));
+//			if (trades != null && trades.size() > 0) {
+//				for (int i =0 ; i < trades.size(); i++) {
+//					Trade trade = new Trade(trades.get(i));
+//					trade.setIssueList(trade.getIssueList().stream()
+//							.filter(is -> is.getField().equalsIgnoreCase(taggedObj.get_field_name()))
+//							.collect(Collectors.toList()));
+//					if (trade.getIssueList().size() > 0)
+//						trade_issues.add(trade);
+//				}
+//
+//				/*
+//				 * Key and Field name exists in DB
+//				 */
+//				if (trade_issues.size() > 0) {
+//					List<Issue> issues = trade_issues.stream().map(Trade::getIssueList).flatMap(x->x.stream()).collect(Collectors.toList());
+//					taggedObj.set_issues(
+//							issues.stream().map(is -> String.valueOf(is.getIssueId())).collect(Collectors.toList()));
+//					taggedObj.set_systematic(true);
+//				} else { // Key and Field name NOT exists in DB
+//					List<Issue> issues = org_trades.stream().map(Trade::getIssueList).flatMap(x->x.stream()).collect(Collectors.toList());
+//					taggedObj.set_issues(
+//							issues.stream().map(is -> String.valueOf(is.getIssueId())).collect(Collectors.toList()));
+//				}
+//			} else {
+//				// TODO implement for NOT existed Trade
+//				System.out.println("Trade not existed ... "+count++);
+//			}
+//		}
 		List<String[]> output  = new ArrayList<String[]>();
 		ExcelWriter writer = new ExcelWriter();
 		
@@ -167,7 +184,9 @@ public class TagProcess {
 		// Format excel option
 		ExcelFormat format = new ExcelFormat();
 		format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
-		format.mergeCell(0, 0, 0, pivot_start-1);
+		format.mergeCell(0, 0, 0, pivot_start-1, "MisMatch");
+		format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
+		format.mergeCell(0, 0, pivot_end+1, pivot_end+2, "User Input");
 		
 		
 		//Export to file
@@ -175,13 +194,16 @@ public class TagProcess {
 		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
 
 		//Save to MongoDB
-		MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
+		/*MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
 		AutoTagOutput ao = new AutoTagOutput();
 		ao.setGeneratedDate(new Date());
 		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\")+1, IConstants.FILE_PATH.lastIndexOf(".")));
 		ao.setReportName(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\")+1, IConstants.FILE_PATH.lastIndexOf(".")));
 		ao.setHeaders(exportHeader);
 		ao.setRows(output.subList(1, output.size()-1).stream().map(o->String.join("!", o)).collect(Collectors.toList()));
-		service.saveToMongoDB(ao);
+		service.saveToMongoDB(ao);*/
+		System.out.print((new Date()).toString());
 	}
+	
+	
 }
