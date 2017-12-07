@@ -1,5 +1,6 @@
 package upskills.autotag;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.stream.Collectors;
 
 import excel.reader.service.ExcelReader;
 import excel.util.ExcelUtils;
+import excel.writer.service.ExcelWriter;
 import ups.mongo.excelutil.ExcelUtilsIn;
 import ups.mongo.fileprocess.MongoDataUtil;
 import ups.mongo.model.AutoTagOutput;
@@ -33,8 +35,22 @@ public class App {
 		
 		service.saveToMongoDB(ao);*/
 		
-		System.out.println("issue 1st".contains("issue"));
+//		System.out.println("issue 1st".contains("issue"));
 		
+		ExcelUtils utl = ExcelUtils.getInstance();
+		utl.setOverwrite(false);
+		utl.set_sheet_name("sfadffff");
+		String filename="TestResult.xlsx";
+		ExcelWriter writer = new ExcelWriter();
+		List<String[]> data = new ArrayList<String[]>();
+		data.add(new String[]{"asdfa","asdfasdf","2aq3234", "sdfasfsadfsdf"});
+		
+		try {
+			writer.writeData(data, filename, utl);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 }

@@ -17,7 +17,7 @@ public class HeaderMap {
 		// TODO Auto-generated constructor stub
 	}
 
-	private static String[] trade_number_head = new String[] { "NB", "TRN_NB", "M_NB" };
+	private static String[] trade_number_head = new String[] { "NB", "TRN_NB", "M_NB", "TRADE NUMBER" };
 	private static String[] family_head = new String[] { "FAM", "FAMILY", "TRN_FMLY", "M_TRN_FMLY" };
 	private static String[] group_head = new String[] { "GROUP", "TRN_GRP", "M_TRN_GRP" };
 	private static String[] type_head = new String[] { "TYPE", "TYP", "TRN_TYPE", "M_TRN_TYPE" };

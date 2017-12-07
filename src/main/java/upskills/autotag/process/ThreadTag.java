@@ -1,4 +1,4 @@
-package upskills.autotag;
+package upskills.autotag.process;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,18 +12,22 @@ import lle.crud.model.Trade;
 import lle.crud.service.TradeService;
 import upskills.autotag.model.TaggedObj;
 
-public class ThreadTest implements Runnable {
+public class ThreadTag extends Thread implements Runnable {
 	HashMap<String, String> key_val = null;
 	List<TaggedObj> mm_table = new ArrayList<>();
 	List<String> mod_key_head = null;
 	TradeService tradeService = DataHibernateUtil.getTradeService();
-	public ThreadTest(List<TaggedObj> list, List<String> key_header)
+	public ThreadTag(List<TaggedObj> list, List<String> key_header)
 	{
 		mm_table = list;
 		mod_key_head = key_header;
 	}
 	
-	@Override
+	public List<TaggedObj> getDataList()
+	{
+		return mm_table;
+	}
+	
 	public void run(){
 		int count=0;
 		for (Iterator iterator = mm_table.iterator(); iterator.hasNext();) {
