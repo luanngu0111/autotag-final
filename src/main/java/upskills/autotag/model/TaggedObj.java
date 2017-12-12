@@ -1,8 +1,13 @@
 package upskills.autotag.model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
+import java.util.Set;
+
+import org.apache.commons.collections4.map.HashedMap;
 
 /**
  * @author LuanNgu
@@ -164,5 +169,35 @@ public class TaggedObj {
 			this._disp_column.put(HeaderMap.MapHeaderToColumn(prop_name), (String) value);
 		}
 	}
-
+	
+	public Object getPropertyByName(String prop_name)
+	{
+		if (prop_name.toLowerCase().equals("selected")) {
+			return this.is_selected();
+		} else if (prop_name.toLowerCase().equals("field"))
+			return this.get_field_name();
+		else if (prop_name.toLowerCase().equals("systematic")) {
+			return this.is_systematic();
+		} else if (prop_name.toLowerCase().contains("issue"))
+			return this.get_issues();
+		else {
+			return this._disp_column.get(prop_name);
+		}
+	}
+	public boolean match(String prop_name, Object value)
+	{
+		Object cur_val = getPropertyByName(prop_name);
+		return cur_val.equals(value);
+	}
+	
+	public boolean compareTo(TaggedObj t)
+	{
+		Set<Entry<String,String>> set = t.get_disp_column().entrySet();
+		boolean res = true;
+		for (Entry<String, String> entry : set) {
+			res = res && match(entry.getKey(), entry.getValue());
+			
+		}
+		return res;
+	}
 }

@@ -3,11 +3,17 @@
  */
 package upskills.autotag.process;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.collections4.map.HashedMap;
 
 import lle.crud.data.util.DataHibernateUtil;
+import lle.crud.model.Issue;
 import lle.crud.model.Trade;
 import lle.crud.model.TradeIssueMap;
 import lle.crud.model.TradeIssueMapKey;
@@ -22,6 +28,7 @@ import upskills.autotag.model.TaggedObj;
 public class ThreadImportTag extends Thread implements Runnable {
 
 	List<TaggedObj> _tag_data_lst = null;
+	List<Trade> _trades = null;
 	TradeService tradeService = DataHibernateUtil.getTradeService();
 	TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	List<TradeIssueMap> _trade_issue_lst = new ArrayList<TradeIssueMap>();
@@ -35,82 +42,27 @@ public class ThreadImportTag extends Thread implements Runnable {
 	}
 
 	/**
-	 * @param arg0
+	 * 
 	 */
-	public ThreadImportTag(Runnable arg0) {
-		super(arg0);
+	public ThreadImportTag(List<TaggedObj> tag_data_lst, List<Trade> trades) {
 		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 */
-	public ThreadImportTag(String arg0) {
-		super(arg0);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 */
-	public ThreadImportTag(ThreadGroup arg0, Runnable arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 */
-	public ThreadImportTag(ThreadGroup arg0, String arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 */
-	public ThreadImportTag(Runnable arg0, String arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 * @param arg2
-	 */
-	public ThreadImportTag(ThreadGroup arg0, Runnable arg1, String arg2) {
-		super(arg0, arg1, arg2);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 * @param arg2
-	 * @param arg3
-	 */
-	public ThreadImportTag(ThreadGroup arg0, Runnable arg1, String arg2, long arg3) {
-		super(arg0, arg1, arg2, arg3);
-		// TODO Auto-generated constructor stub
+		this._tag_data_lst = tag_data_lst;
+		this._trades = trades;
 	}
 
 	public void run() {
 		// TODO Auto-generated method stub
 		super.run();
 		int count = 0;
+		List<Trade> trade_lst = null;
+		DateFormat df = new SimpleDateFormat("HH:mm:ss.SSSS");
+		
 		for (TaggedObj obj : _tag_data_lst) {
-			List<Trade> trade_lst = tradeService.getTradeByCriteria(obj.get_disp_column()); // Get
-																							// list
-																							// of
-																							// trades
-																							// by
-																							// predefined
-																							// filter
+			System.out.println("-- Get trade start " + df.format(new Date()));
+			trade_lst = tradeService.getTradeByCriteria(obj.get_disp_column()); // Get list of trades by predefined filter
+			System.out.println("-- Get trade end " + df.format(new Date()));
 			for (Trade trade : trade_lst) {
+				System.out.println("-- Create trade issue start " + df.format(new Date()));
 				for (String s : obj.get_issues()) {
 					String mod_s = null;
 					try {
@@ -125,6 +77,7 @@ public class ThreadImportTag extends Thread implements Runnable {
 					}
 
 				}
+				System.out.println("-- Create trade issue end " + df.format(new Date()));
 			}
 			System.out.println("-- Item " + count++);
 		}
@@ -133,5 +86,6 @@ public class ThreadImportTag extends Thread implements Runnable {
 		 * Save to db TODO invoke batch insertion function
 		 */
 		tradeIssueService.createTradeIssueMap(_trade_issue_lst);
+		System.out.println("End process " + df.format(new Date()));
 	}
 }
