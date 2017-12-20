@@ -1,17 +1,8 @@
 package upskills.autotag.process;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.map.MultiValueMap;
 
 import excel.reader.service.ExcelReader;
 import excel.util.ExcelUtils;
@@ -22,6 +13,7 @@ import lle.crud.service.TradeIssueMapService;
 import lle.crud.service.TradeService;
 import ups.mongo.fileprocess.MongoDataUtil;
 import ups.mongo.model.AutoTagOutput;
+import ups.mongo.service.AutoTagService;
 import upskills.autotag.model.TaggedObj;
 import upskills.autotag.resource.IConstants;
 
@@ -31,14 +23,15 @@ import upskills.autotag.resource.IConstants;
  */
 public class ImportTagProcess {
 
-	private static final int MAX_THREAD = 1; // statelessSession cannot be used in multithread
+	private static final int MAX_THREAD = 1; // statelessSession cannot be used
+												// in multithread
 	private static List<TaggedObj> _tag_data_lst = new ArrayList<TaggedObj>();
 	private static List<TradeIssueMap> _trade_issue_lst = new ArrayList<TradeIssueMap>();
 	private static TradeService tradeService = DataHibernateUtil.getTradeService();
 	private static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static String _report_id;
 	static String _report_date;
-	private static MongoDataUtil _autotag_svc;
+	private static AutoTagService _autotag_svc = MongoDataUtil.getAutoTagService();
 
 	public enum Source {
 		EXCEL, DATABASE
@@ -93,13 +86,13 @@ public class ImportTagProcess {
 	}
 
 	private static void saveTagstoDb() throws InterruptedException {
-		
+
 		System.out.println("** Start import");
 		ThreadImportTag[] threads = new ThreadImportTag[MAX_THREAD];
 
 		int size = _tag_data_lst.size();
-		List<Trade> trades  = tradeService.getAllTrade();
-		
+		List<Trade> trades = tradeService.getAllTrade();
+
 		if (size < MAX_THREAD) {
 			ThreadImportTag t = new ThreadImportTag(_tag_data_lst);
 			t.start();
@@ -107,9 +100,9 @@ public class ImportTagProcess {
 		} else {
 			for (int i = 1; i <= MAX_THREAD; i++) {
 				int pos_start = size / MAX_THREAD * (i - 1);
-				int pos_end = (i == MAX_THREAD) ? size  : size / MAX_THREAD * i ;
+				int pos_end = (i == MAX_THREAD) ? size : size / MAX_THREAD * i;
 				List<TaggedObj> sub_list = _tag_data_lst.subList(pos_start, pos_end);
-				ThreadImportTag t = new ThreadImportTag(sub_list,trades);
+				ThreadImportTag t = new ThreadImportTag(sub_list, trades);
 				System.out.println("**[THREAD] " + i + " batch size " + pos_end);
 				t.start();
 				threads[i - 1] = t;
@@ -119,7 +112,7 @@ public class ImportTagProcess {
 				t.join();
 			}
 		}
-		
+
 	}
 
 	public static void execute(Source source) throws InterruptedException {
@@ -133,6 +126,28 @@ public class ImportTagProcess {
 		default:
 			break;
 		}
+		saveTagstoDb();
+	}
+
+	/** Import from file
+	 * @param filepath
+	 * @throws InterruptedException
+	 */
+	public static void execute(String filepath) throws InterruptedException {
+		IConstants.EXPORT_EXCEL_FILE = filepath;
+		_tag_data_lst = readDatafromExcel(IConstants.EXPORT_EXCEL_FILE);
+		saveTagstoDb();
+	}
+
+	/** Import from database
+	 * @param reportId
+	 * @param reportDate
+	 * @throws InterruptedException
+	 */
+	public static void execute(String reportId, String reportDate) throws InterruptedException {
+		_report_id = reportId;
+		_report_date = reportDate;
+		_tag_data_lst = readDatafromDB(_report_id, _report_date);
 		saveTagstoDb();
 	}
 

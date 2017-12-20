@@ -75,7 +75,7 @@ public class TagProcess {
 
 	private static List<String[]> readFromDb(String reportId, String reportingDate) {
 		List<String[]> mm_result = new ArrayList<String[]>();
-		MongoDataUtil service = new MongoDataUtil(ReconOutputService.class);
+		ReconOutputService service = MongoDataUtil.getReconOutputService();
 		ReconOutput ro = (ReconOutput) service.getByReportIdAndReportingDate(reportId, reportingDate).get(0);
 		mm_result = ro.getRows().stream().map(o -> o.split("!")).collect(Collectors.toList());
 		return mm_result;
@@ -163,7 +163,7 @@ public class TagProcess {
 
 		// Save to MongoDB
 
-		MongoDataUtil service = new MongoDataUtil(AutoTagService.class);
+		AutoTagService service = MongoDataUtil.getAutoTagService();
 		AutoTagOutput ao = new AutoTagOutput();
 		ao.setGeneratedDate(new Date());
 		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\") + 1,

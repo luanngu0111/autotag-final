@@ -28,8 +28,8 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="/MongoConnection-Final"/>
 	<classpathentry kind="src" path="/ExcelLib"/>
 	<classpathentry kind="src" path="/SQLConnection"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/MongoConnection-Final"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
