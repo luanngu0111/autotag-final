@@ -7,13 +7,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.collections4.map.HashedMap;
 
 import lle.crud.data.util.DataHibernateUtil;
-import lle.crud.model.Issue;
 import lle.crud.model.Trade;
 import lle.crud.model.TradeIssueMap;
 import lle.crud.model.TradeIssueMapKey;
@@ -50,42 +47,42 @@ public class ThreadImportTag extends Thread implements Runnable {
 		this._trades = trades;
 	}
 
-	public void run() {
-		// TODO Auto-generated method stub
-		super.run();
-		int count = 0;
-		List<Trade> trade_lst = null;
+	
+	public void run()
+	{
 		DateFormat df = new SimpleDateFormat("HH:mm:ss.SSSS");
-		
+		List<HashMap<String,String>> trade_issue = new ArrayList<HashMap<String,String>>();
+		int count=0;
 		for (TaggedObj obj : _tag_data_lst) {
-			System.out.println("-- Get trade start " + df.format(new Date()));
-			trade_lst = tradeService.getTradeByCriteria(obj.get_disp_column()); // Get list of trades by predefined filter
-			System.out.println("-- Get trade end " + df.format(new Date()));
-			for (Trade trade : trade_lst) {
-				System.out.println("-- Create trade issue start " + df.format(new Date()));
-				for (String s : obj.get_issues()) {
-					String mod_s = null;
-					try {
-						mod_s = s.substring(0, s.lastIndexOf("."));
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						mod_s = s;
-					} finally {
-
-						TradeIssueMapKey tr_is_map = new TradeIssueMapKey(trade.getTradeNb(), Integer.parseInt(mod_s));
-						_trade_issue_lst.add(new TradeIssueMap(tr_is_map, new Date()));
-					}
-
-				}
-				System.out.println("-- Create trade issue end " + df.format(new Date()));
-			}
-			System.out.println("-- Item " + count++);
+			HashMap<String, String> trades = new HashMap<String,String>();
+			trades.putAll(obj.get_disp_column());
+			trades.put("issue", obj.get_issues().get(0));
+			trade_issue.add(trades);
+			System.out.println("*** [NUMBER] "+ count++);
 		}
-
-		/*
-		 * Save to db TODO invoke batch insertion function
-		 */
-		tradeIssueService.createTradeIssueMap(_trade_issue_lst);
+		
+		for (HashMap<String, String> hashMap : trade_issue) {
+			tradeIssueService.insertTradeIssue(hashMap);
+		}
 		System.out.println("End process " + df.format(new Date()));
+	}
+	
+	public void execute(){
+		DateFormat df = new SimpleDateFormat("HH:mm:ss.SSSS");
+		List<HashMap<String,String>> trade_issue = new ArrayList<HashMap<String,String>>();
+		int count=0;
+		for (TaggedObj obj : _tag_data_lst) {
+			HashMap<String, String> trades = new HashMap<String,String>();
+			trades.putAll(obj.get_disp_column());
+			trades.put("issue", obj.get_issues().get(0));
+			trade_issue.add(trades);
+			System.out.println("*** [NUMBER] "+ count++);
+		}
+		
+		for (HashMap<String, String> hashMap : trade_issue) {
+			tradeIssueService.insertTradeIssue(hashMap);
+		}
+		System.out.println("End process " + df.format(new Date()));
+		
 	}
 }

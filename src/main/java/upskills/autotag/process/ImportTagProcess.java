@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MultiValuedMap;
@@ -29,7 +31,7 @@ import upskills.autotag.resource.IConstants;
  */
 public class ImportTagProcess {
 
-	private static final int MAX_THREAD = 16;
+	private static final int MAX_THREAD = 1; // statelessSession cannot be used in multithread
 	private static List<TaggedObj> _tag_data_lst = new ArrayList<TaggedObj>();
 	private static List<TradeIssueMap> _trade_issue_lst = new ArrayList<TradeIssueMap>();
 	private static TradeService tradeService = DataHibernateUtil.getTradeService();
@@ -97,14 +99,15 @@ public class ImportTagProcess {
 
 		int size = _tag_data_lst.size();
 		List<Trade> trades  = tradeService.getAllTrade();
+		
 		if (size < MAX_THREAD) {
-			ThreadImportTag t = new ThreadImportTag(_tag_data_lst,trades);
+			ThreadImportTag t = new ThreadImportTag(_tag_data_lst);
 			t.start();
 			threads[0] = t;
 		} else {
 			for (int i = 1; i <= MAX_THREAD; i++) {
 				int pos_start = size / MAX_THREAD * (i - 1);
-				int pos_end = (i == MAX_THREAD) ? size - 1 : size / MAX_THREAD * i - 1;
+				int pos_end = (i == MAX_THREAD) ? size  : size / MAX_THREAD * i ;
 				List<TaggedObj> sub_list = _tag_data_lst.subList(pos_start, pos_end);
 				ThreadImportTag t = new ThreadImportTag(sub_list,trades);
 				System.out.println("**[THREAD] " + i + " batch size " + pos_end);
@@ -116,34 +119,6 @@ public class ImportTagProcess {
 				t.join();
 			}
 		}
-		
-		
-		
-		/*
-		 * for (TaggedObj obj : _tag_data_lst.subList(0, 2)) {
-		 * System.out.println("-- Get trades list" + df.format(new Date()));
-		 * List<Trade> trade_lst =
-		 * tradeService.getTradeByCriteria(obj.get_disp_column()); // Get list
-		 * of trades by predefined filter System.out.println(
-		 * "-- Create issue trade map" + df.format(new Date())); for (Trade
-		 * trade : trade_lst) { for (String s : obj.get_issues()) { String mod_s
-		 * = null; try { mod_s = s.substring(0, s.lastIndexOf(".")); } catch
-		 * (Exception e) { // TODO Auto-generated catch block mod_s = s; }
-		 * finally {
-		 * 
-		 * TradeIssueMapKey tr_is_map = new TradeIssueMapKey(trade.getTradeNb(),
-		 * Integer.parseInt(mod_s)); _trade_issue_lst.add(new
-		 * TradeIssueMap(tr_is_map, new Date())); }
-		 * 
-		 * } }
-		 * 
-		 * }
-		 * 
-		 * 
-		 * Save to db TODO invoke batch insertion function
-		 * 
-		 * tradeIssueService.createTradeIssueMap(_trade_issue_lst);
-		 */
 		
 	}
 
