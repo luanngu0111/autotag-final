@@ -29,7 +29,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="/ExcelLib"/>
-	<classpathentry kind="src" path="/SQLConnection"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/MongoConnection-Final"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/SQLConnection"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

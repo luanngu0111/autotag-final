@@ -1,9 +1,9 @@
 package upskills.autotag;
 
-import java.util.List;
+import java.util.Date;
 
-import lle.crud.dao.impl.HbnTradeDao;
-import lle.crud.model.Trade;
+import upskills.autotag.process.ImportTagProcess;
+import upskills.autotag.process.TagProcess;
 
 /**
  * Hello world!
@@ -24,6 +24,18 @@ public class App {
 		service.saveToMongoDB(ao);*/
 		
 //		System.out.println("issue 1st".contains("issue"));
+		
+		System.out.println((
+				new Date()).toString());
+		try {
+//			ImportTagProcess.execute("R320", "2017 May 07", (new Date()).toString());
+			TagProcess.execute("R320", "2017 Sep 20", "Mon Dec 25 10:30:15 ICT 2017", new String[]{"Trade_number"});
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 		
 		
 		

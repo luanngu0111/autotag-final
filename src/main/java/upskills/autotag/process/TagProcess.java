@@ -34,8 +34,8 @@ public class TagProcess {
 	static TradeService tradeService = DataHibernateUtil.getTradeService();
 	static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static List<String> exportHeader = new ArrayList<String>(Arrays.asList(IConstants.EXPORT_HEADER_NEUTRAL));
-	static String reportId, reportingDate;
-	static final int MAX_THREAD = 32;
+	static String reportId, reportingDate, reconTime;
+	static final int MAX_THREAD = 4;
 
 	public static void main(String[] args) {
 		String[] headers = new String[] { "TRN_NB" };
@@ -50,12 +50,13 @@ public class TagProcess {
 	public static List<TaggedObj> extractMismatchColumn(List<String[]> mm_result) throws CloneNotSupportedException {
 		int i = 1;
 		String[] header = mm_result.get(0);
+		int length = header.length;
 		int size = mm_result.size();
 		List<TaggedObj> mm_table = new ArrayList<>();
 		for (; i < size - 1; i = i + 2) {
 			String[] data1 = (mm_result.get(i));
 			String[] data2 = (mm_result.get(i + 1));
-			int length = data1.length;
+			length = (length > data1.length)?data1.length:length;
 			TaggedObj result = new TaggedObj();
 			for (int j = 3; j < length; j++) {
 
@@ -73,12 +74,21 @@ public class TagProcess {
 		return mm_table;
 	}
 
-	private static List<String[]> readFromDb(String reportId, String reportingDate) {
+	private static List<String[]> readFromDb(String reportId, String reportingDate, String reconTime) {
+		
 		List<String[]> mm_result = new ArrayList<String[]>();
 		ReconOutputService service = MongoDataUtil.getReconOutputService();
-		ReconOutput ro = (ReconOutput) service.getByReportIdAndReportingDate(reportId, reportingDate).get(0);
+		List<ReconOutput> list = new ArrayList<ReconOutput>(service.getByReportIdAndReportingDate(reportId, reportingDate));
+		ReconOutput ro = list.stream().filter(t->t.getReconTime().toString().equalsIgnoreCase(reconTime)).collect(Collectors.toList()).get(0);
 		mm_result = ro.getRows().stream().map(o -> o.split("!")).collect(Collectors.toList());
-		return mm_result;
+		int pos_missing = mm_result.size() - 1;
+		String[] s = mm_result.get(pos_missing);
+
+		while (s[0].equalsIgnoreCase("mx2") || s[0].equalsIgnoreCase("mx3")){
+			pos_missing--;
+			s = mm_result.get(pos_missing);
+		}
+		return new ArrayList<String[]>(mm_result.subList(0, pos_missing+1));
 
 	}
 
@@ -88,8 +98,20 @@ public class TagProcess {
 	 * @throws Exception
 	 *             Description: to tag issue for trade
 	 */
-	public static void execute(List<String> key_headers) throws Exception {
-		getTagByKeyColumn(key_headers);
+	public static void execute(String rep_id, String rep_date, String recon_time, List<String> key_headers) throws Exception {
+		getTagByKeyColumn(rep_id,rep_date,recon_time, key_headers);
+	}
+	
+	/** @author LuanNgu
+	 * @param rep_id
+	 * @param rep_date
+	 * @param recon_time
+	 * @param key_headers String[]
+	 * @throws Exception
+	 */
+	public static void execute(String rep_id, String rep_date, String recon_time, String[] key_headers) throws Exception {
+		List<String> list_headers = new ArrayList<String>(Arrays.asList(key_headers));
+		getTagByKeyColumn(rep_id,rep_date,recon_time, list_headers);
 	}
 
 	/**
@@ -109,14 +131,14 @@ public class TagProcess {
 		utl.set_splitter(IConstants.CSV_SPLIT);
 		utl.set_sheet_id(2);
 
-		ExcelReader reader = new ExcelReader();
-		 mm_result = reader.readData(IConstants.FILE_PATH, utl);
-//		mm_result = readFromDb(reportId, reportingDate);
+		// ExcelReader reader = new ExcelReader();
+		// mm_result = reader.readData(IConstants.FILE_PATH, utl);
+		mm_result = readFromDb(reportId, reportingDate, reconTime);
 		mm_table = extractMismatchColumn(mm_result);
 
 		ThreadTag[] threads = new ThreadTag[MAX_THREAD];
 
-		int size = mm_result.size();
+		int size = mm_table.size();
 		if (size < MAX_THREAD)
 		{
 			ThreadTag t = new ThreadTag(mm_table, mod_key_head);
@@ -125,7 +147,7 @@ public class TagProcess {
 		}
 		for (int i = 1; i <= MAX_THREAD; i++) {
 			int pos_start = size / MAX_THREAD * (i - 1);
-			int pos_end = (i == MAX_THREAD) ? size - 1 : size / MAX_THREAD * i - 1;
+			int pos_end = (i == MAX_THREAD) ? size-1 : size / MAX_THREAD * i;
 			List<TaggedObj> sub_list = mm_table.subList(pos_start, pos_end);
 			ThreadTag t = new ThreadTag(sub_list, mod_key_head);
 			t.start();
@@ -139,43 +161,58 @@ public class TagProcess {
 		}
 
 		List<String[]> output = new ArrayList<String[]>();
-		ExcelWriter writer = new ExcelWriter();
+		
 
 		// Config excel file
-		utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
+		// ExcelWriter writer = new ExcelWriter();
+		// utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
 
 		// Prepare header
 		exportHeader.addAll(1, key_headers);
 		output.add(exportHeader.toArray(new String[0]));
 		output.addAll(table_result.parallelStream().map(m -> m.toString().split(";")).collect(Collectors.toList()));
-		int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
-		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
 		// Format excel option
-		ExcelFormat format = new ExcelFormat();
-		format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
-		format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
-		format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
-		format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
+		// ExcelFormat format = new ExcelFormat();
+		// format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
+		// format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
+		// format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
+		// format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
 
 		// Export to file
-		utl.set_format(format);
-		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
+		// utl.set_format(format);
+		// writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
 
+		
+		
 		// Save to MongoDB
-
 		AutoTagService service = MongoDataUtil.getAutoTagService();
 		AutoTagOutput ao = new AutoTagOutput();
 		ao.setGeneratedDate(new Date());
-		ao.setReportId(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\") + 1,
-				IConstants.FILE_PATH.lastIndexOf(".")));
-		ao.setReportName(IConstants.FILE_PATH.substring(IConstants.FILE_PATH.indexOf("\\") + 1,
-				IConstants.FILE_PATH.lastIndexOf(".")));
+		ao.setReportId(reportId);
+		ao.setReportName(reportId);
 		ao.setHeaders(exportHeader);
-		ao.setRows(output.subList(1, output.size() - 1).stream().map(o -> String.join("!", o))
+		ao.setRows(output.subList(1, output.size()).stream().map(o -> String.join("!", o))
 				.collect(Collectors.toList()));
 		service.saveToMongoDB(ao);
 
 		System.out.print((new Date()).toString());
 	}
 
+	/** @author LuanNgu
+	 * @param rep_id
+	 * @param rep_date
+	 * @param recon_time
+	 * @param key_headers
+	 * @throws Exception
+	 */
+	public static void getTagByKeyColumn(String rep_id, String rep_date, String recon_time, List<String> key_headers)
+			throws Exception {
+
+		reportId = rep_id;
+		reportingDate = rep_date;
+		reconTime = recon_time;
+
+		getTagByKeyColumn(key_headers);
+
+	}
 }

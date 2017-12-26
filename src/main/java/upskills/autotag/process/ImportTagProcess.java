@@ -1,6 +1,10 @@
 package upskills.autotag.process;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,14 +27,12 @@ import upskills.autotag.resource.IConstants;
  */
 public class ImportTagProcess {
 
-	private static final int MAX_THREAD = 1; // statelessSession cannot be used
-												// in multithread
 	private static List<TaggedObj> _tag_data_lst = new ArrayList<TaggedObj>();
 	private static List<TradeIssueMap> _trade_issue_lst = new ArrayList<TradeIssueMap>();
 	private static TradeService tradeService = DataHibernateUtil.getTradeService();
 	private static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static String _report_id;
-	static String _report_date;
+	static String _report_date, _recon_time;
 	private static AutoTagService _autotag_svc = MongoDataUtil.getAutoTagService();
 
 	public enum Source {
@@ -65,7 +67,7 @@ public class ImportTagProcess {
 		return tagList;
 	}
 
-	/**
+	/** Read from excel file
 	 * @param filename
 	 * @return
 	 */
@@ -77,51 +79,57 @@ public class ImportTagProcess {
 		return readData(tagData);
 	}
 
-	private static List<TaggedObj> readDatafromDB(String reportId, String reportingDate) {
-		AutoTagOutput tags = (AutoTagOutput) _autotag_svc.getByReportIdAndReportingDate(reportId, reportingDate).get(0);
+	/** Read data from MongoDB
+	 * @param reportId
+	 * @param reportingDate
+	 * @param reconTime
+	 * @return
+	 */
+	private static List<TaggedObj> readDatafromDB(String reportId, String reportingDate, String reconTime) {
+		List<AutoTagOutput> list = _autotag_svc.getByReportIdAndReportingDate(reportId, reportingDate);
+		AutoTagOutput tags = list.stream().filter(t -> t.getGeneratedDate().toString().equals(reconTime))
+				.collect(Collectors.toList()).get(0);
 		List<String[]> tagData = tags.getRows().stream().map(row -> row.split("!")).collect(Collectors.toList());
-
 		return readData(tagData);
 
 	}
 
+	/** Save result to MongoDb
+	 * @throws InterruptedException
+	 */
 	private static void saveTagstoDb() throws InterruptedException {
 
 		System.out.println("** Start import");
-		ThreadImportTag[] threads = new ThreadImportTag[MAX_THREAD];
 
-		int size = _tag_data_lst.size();
-		List<Trade> trades = tradeService.getAllTrade();
-
-		if (size < MAX_THREAD) {
-			ThreadImportTag t = new ThreadImportTag(_tag_data_lst);
-			t.start();
-			threads[0] = t;
-		} else {
-			for (int i = 1; i <= MAX_THREAD; i++) {
-				int pos_start = size / MAX_THREAD * (i - 1);
-				int pos_end = (i == MAX_THREAD) ? size : size / MAX_THREAD * i;
-				List<TaggedObj> sub_list = _tag_data_lst.subList(pos_start, pos_end);
-				ThreadImportTag t = new ThreadImportTag(sub_list, trades);
-				System.out.println("**[THREAD] " + i + " batch size " + pos_end);
-				t.start();
-				threads[i - 1] = t;
-			}
-
-			for (ThreadImportTag t : threads) {
-				t.join();
-			}
+		DateFormat df = new SimpleDateFormat("HH:mm:ss.SSSS");
+		List<HashMap<String,String>> trade_issue = new ArrayList<HashMap<String,String>>();
+		int count=0;
+		for (TaggedObj obj : _tag_data_lst) {
+			HashMap<String, String> trades = new HashMap<String,String>();
+			trades.putAll(obj.get_disp_column());
+			trades.put("issue", obj.get_issues().get(0));
+			trade_issue.add(trades);
+			System.out.println("*** [NUMBER] "+ count++);
 		}
+		
+		for (HashMap<String, String> hashMap : trade_issue) {
+			tradeIssueService.insertTradeIssue(hashMap);
+		}
+		System.out.println("End process " + df.format(new Date()));
 
 	}
 
+	/** Execute Import process with indication of source
+	 * @param source
+	 * @throws InterruptedException
+	 */
 	public static void execute(Source source) throws InterruptedException {
 		switch (source) {
 		case EXCEL:
 			_tag_data_lst = readDatafromExcel(IConstants.EXPORT_EXCEL_FILE);
 			break;
 		case DATABASE:
-			_tag_data_lst = readDatafromDB(_report_id, _report_date);
+			_tag_data_lst = readDatafromDB(_report_id, _report_date,_recon_time);
 			break;
 		default:
 			break;
@@ -129,7 +137,7 @@ public class ImportTagProcess {
 		saveTagstoDb();
 	}
 
-	/** Import from file
+	/** Execute Import from file
 	 * @param filepath
 	 * @throws InterruptedException
 	 */
@@ -139,15 +147,16 @@ public class ImportTagProcess {
 		saveTagstoDb();
 	}
 
-	/** Import from database
+	/** Execute Import from MongoDB
 	 * @param reportId
 	 * @param reportDate
 	 * @throws InterruptedException
 	 */
-	public static void execute(String reportId, String reportDate) throws InterruptedException {
+	public static void execute(String reportId, String reportDate, String reconTime) throws InterruptedException {
 		_report_id = reportId;
 		_report_date = reportDate;
-		_tag_data_lst = readDatafromDB(_report_id, _report_date);
+		_recon_time = reconTime;
+		_tag_data_lst = readDatafromDB(_report_id, _report_date,_recon_time);
 		saveTagstoDb();
 	}
 
