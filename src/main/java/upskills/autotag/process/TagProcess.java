@@ -147,8 +147,8 @@ public class TagProcess {
 		}
 		for (int i = 1; i <= MAX_THREAD; i++) {
 			int pos_start = size / MAX_THREAD * (i - 1);
-			int pos_end = (i == MAX_THREAD) ? size-1 : size / MAX_THREAD * i;
-			List<TaggedObj> sub_list = mm_table.subList(pos_start, pos_end);
+			int pos_end = (i == MAX_THREAD) ? size : size / MAX_THREAD * i;
+			List<TaggedObj> sub_list = new ArrayList<TaggedObj>(mm_table.subList(pos_start, pos_end));
 			ThreadTag t = new ThreadTag(sub_list, mod_key_head);
 			t.start();
 			threads[i - 1] = t;

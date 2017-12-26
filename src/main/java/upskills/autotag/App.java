@@ -4,6 +4,7 @@ import java.util.Date;
 
 import upskills.autotag.process.ImportTagProcess;
 import upskills.autotag.process.TagProcess;
+import upskills.autotag.resource.IConstants;
 
 /**
  * Hello world!
@@ -28,8 +29,8 @@ public class App {
 		System.out.println((
 				new Date()).toString());
 		try {
-//			ImportTagProcess.execute("R320", "2017 May 07", (new Date()).toString());
-			TagProcess.execute("R320", "2017 Sep 20", "Mon Dec 25 10:30:15 ICT 2017", new String[]{"Trade_number"});
+			ImportTagProcess.execute(IConstants.EXPORT_EXCEL_FILE);
+//			TagProcess.execute("R320", "2017 Sep 20", "Tue Dec 26 14:43:03 ICT 2017", new String[]{"Trade_number"});
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

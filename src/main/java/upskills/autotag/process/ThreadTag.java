@@ -19,7 +19,7 @@ public class ThreadTag extends Thread implements Runnable {
 	TradeService tradeService = DataHibernateUtil.getTradeService();
 	public ThreadTag(List<TaggedObj> list, List<String> key_header)
 	{
-		mm_table = list;
+		mm_table = new ArrayList<>(list);
 		mod_key_head = key_header;
 	}
 	
