@@ -34,6 +34,7 @@ public class TagProcess {
 	static TradeService tradeService = DataHibernateUtil.getTradeService();
 	static TradeIssueMapService tradeIssueService = DataHibernateUtil.getTradeIssueMapService();
 	static List<String> exportHeader = new ArrayList<String>(Arrays.asList(IConstants.EXPORT_HEADER_NEUTRAL));
+	static List<String[]> outputData = new ArrayList<String[]>();
 	static String reportId, reportingDate, reconTime;
 	static final int MAX_THREAD = 4;
 
@@ -45,6 +46,11 @@ public class TagProcess {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public static List<String[]> getOutputData()
+	{
+		return outputData;
 	}
 
 	public static List<TaggedObj> extractMismatchColumn(List<String[]> mm_result) throws CloneNotSupportedException {
@@ -176,8 +182,8 @@ public class TagProcess {
 
 		// Prepare header
 		exportHeader.addAll(1, key_headers);
-		output.add(exportHeader.toArray(new String[0]));
-		output.addAll(table_result.parallelStream().map(m -> m.toString().split("!")).collect(Collectors.toList()));
+		outputData.add(exportHeader.toArray(new String[0]));
+		outputData.addAll(table_result.parallelStream().map(m -> m.toString().split("!")).collect(Collectors.toList()));
 		
 		/*int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
 		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
@@ -201,13 +207,13 @@ public class TagProcess {
 		ao.setReportId(reportId);
 		ao.setReportName(reportId);
 		ao.setHeaders(exportHeader);
-		ao.setRows(output.subList(1, output.size()).stream().map(o -> String.join("!", o))
+		ao.setRows(outputData.subList(1, outputData.size()).stream().map(o -> String.join("!", o))
 				.collect(Collectors.toList()));
 		service.saveToMongoDB(ao);
 
 		
 		//Export to file
-		printExcelFile(output);
+		printExcelFile(outputData);
 		
 		System.out.print((new Date()).toString());
 	}
@@ -230,7 +236,7 @@ public class TagProcess {
 
 	}
 	
-	private static void printExcelFile(List<String[]> output) throws Exception
+	public static void printExcelFile(List<String[]> output) throws Exception
 	{
 		// Config excel file
 		ExcelWriter writer = new ExcelWriter();
