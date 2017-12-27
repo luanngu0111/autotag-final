@@ -30,6 +30,6 @@
 	</classpathentry>
 	<classpathentry kind="src" path="/ExcelLib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/MongoConnection-Final"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/SQLConnection"/>
+	<classpathentry kind="src" path="/SQLConnection-Final"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

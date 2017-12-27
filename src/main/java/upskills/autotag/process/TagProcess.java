@@ -213,7 +213,7 @@ public class TagProcess {
 
 		
 		//Export to file
-		printExcelFile(outputData);
+		//printExcelFile(outputData);
 		
 		System.out.print((new Date()).toString());
 	}
@@ -236,7 +236,7 @@ public class TagProcess {
 
 	}
 	
-	public static void printExcelFile(List<String[]> output) throws Exception
+	public static void printExcelFile(List<String[]> output, String fileName) throws Exception
 	{
 		// Config excel file
 		ExcelWriter writer = new ExcelWriter();
@@ -254,6 +254,6 @@ public class TagProcess {
 
 		// Export to file
 		utl.set_format(format);
-		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
+		writer.writeData(output, fileName, utl);
 	}
 }
