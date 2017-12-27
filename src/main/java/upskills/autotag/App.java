@@ -2,9 +2,11 @@ package upskills.autotag;
 
 import java.util.Date;
 
+import upskills.autotag.model.HeaderMap;
 import upskills.autotag.process.ImportTagProcess;
 import upskills.autotag.process.TagProcess;
 import upskills.autotag.resource.IConstants;
+
 
 /**
  * Hello world!
@@ -28,9 +30,12 @@ public class App {
 		
 		System.out.println((
 				new Date()).toString());
+		
 		try {
-			ImportTagProcess.execute(IConstants.EXPORT_EXCEL_FILE);
-//			TagProcess.execute("R320", "2017 Sep 20", "Tue Dec 26 14:43:03 ICT 2017", new String[]{"Trade_number"});
+//			ImportTagProcess.execute(IConstants.EXPORT_EXCEL_FILE);
+			TagProcess.execute("R320", "2017 Sep 20", "Tue Dec 26 14:43:03 ICT 2017", new String[]{"Trade_number"});
+//			HeaderMap.addTradeHeader("");
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

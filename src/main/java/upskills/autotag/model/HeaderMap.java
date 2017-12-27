@@ -6,11 +6,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import upskills.autotag.resource.IConstants;
 
 
+/**
+ * @author LuanNgu
+ * The class usage is to transform the report header to standardize header name (which is corresponding column name in DB)
+ */
 public class HeaderMap {
 
 	public HeaderMap() {
@@ -36,17 +42,19 @@ public class HeaderMap {
 	}
 
 	public static void addTradeHeader(String head) {
-		if (head.trim().equals(""))
+
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = trade_number_head.length;
 		String[] temp = new String[size + 1];
 		temp[0] = head;
 		System.arraycopy(trade_number_head, 0, temp, 1, size);
 		trade_number_head = temp.clone();
+
 	}
 
 	public static void addFmlyHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = family_head.length;
 		String[] temp = new String[size + 1];
@@ -56,7 +64,7 @@ public class HeaderMap {
 	}
 
 	public static void addGrpHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = group_head.length;
 		String[] temp = new String[size + 1];
@@ -66,7 +74,7 @@ public class HeaderMap {
 	}
 
 	public static void addTypeHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = type_head.length;
 		String[] temp = new String[size + 1];
@@ -76,7 +84,7 @@ public class HeaderMap {
 	}
 
 	public static void addPortHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = portfolio_head.length;
 		String[] temp = new String[size + 1];
@@ -86,7 +94,7 @@ public class HeaderMap {
 	}
 
 	public static void addInstrumentHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = instrument_head.length;
 		String[] temp = new String[size + 1];
@@ -96,7 +104,7 @@ public class HeaderMap {
 	}
 
 	public static void addCurrHeader(String head) {
-		if (head.trim().equals(""))
+		if (head==null || head.trim().equals(""))
 			return;
 		int size = currency_head.length;
 		String[] temp = new String[size + 1];

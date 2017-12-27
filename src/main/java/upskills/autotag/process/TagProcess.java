@@ -48,25 +48,26 @@ public class TagProcess {
 	}
 
 	public static List<TaggedObj> extractMismatchColumn(List<String[]> mm_result) throws CloneNotSupportedException {
-		int i = 1;
-		String[] header = mm_result.get(0);
+		int i = 1; //ignore header row
+		String[] header = mm_result.get(0); // extract header
+		
 		int length = header.length;
 		int size = mm_result.size();
 		List<TaggedObj> mm_table = new ArrayList<>();
-		for (; i < size - 1; i = i + 2) {
+		for (; i < size - 1; i = i + 2) { 
 			String[] data1 = (mm_result.get(i));
-			String[] data2 = (mm_result.get(i + 1));
+			String[] data2 = (mm_result.get(i + 1)); 
 			length = (length > data1.length)?data1.length:length;
 			TaggedObj result = new TaggedObj();
 			for (int j = 3; j < length; j++) {
 
 				result.set_selected(false);
 				result.set_systematic(false);
-				if (data1[j].compareToIgnoreCase(data2[j]) == 0) {
-					result.get_disp_column().put(HeaderMap.MapHeaderToColumn(header[j]), data1[j]);
-				} else {
-					result.set_field_name(header[j]);
-					mm_table.add(new TaggedObj(result));
+				if (data1[j].compareToIgnoreCase(data2[j]) == 0) {  // if data is matched
+					result.get_disp_column().put(HeaderMap.MapHeaderToColumn(header[j]), data1[j]); // store key column header and its data
+				} else { // if not matched
+					result.set_field_name(header[j]); //store mismatch column header
+					mm_table.add(new TaggedObj(result)); 
 				}
 
 			}
@@ -78,13 +79,17 @@ public class TagProcess {
 		
 		List<String[]> mm_result = new ArrayList<String[]>();
 		ReconOutputService service = MongoDataUtil.getReconOutputService();
+		
+		//Get list of output by ReportID and ReportDates
 		List<ReconOutput> list = new ArrayList<ReconOutput>(service.getByReportIdAndReportingDate(reportId, reportingDate));
+		
+		//Extract expected output by Recontime.
 		ReconOutput ro = list.stream().filter(t->t.getReconTime().toString().equalsIgnoreCase(reconTime)).collect(Collectors.toList()).get(0);
 		mm_result = ro.getRows().stream().map(o -> o.split("!")).collect(Collectors.toList());
 		int pos_missing = mm_result.size() - 1;
 		String[] s = mm_result.get(pos_missing);
 
-		while (s[0].equalsIgnoreCase("mx2") || s[0].equalsIgnoreCase("mx3")){
+		while (s[0].equalsIgnoreCase("mx2") || s[0].equalsIgnoreCase("mx3")){ //ignore the missing data rows
 			pos_missing--;
 			s = mm_result.get(pos_missing);
 		}
@@ -103,11 +108,12 @@ public class TagProcess {
 	}
 	
 	/** @author LuanNgu
-	 * @param rep_id
-	 * @param rep_date
-	 * @param recon_time
-	 * @param key_headers String[]
+	 * @param rep_id report id/code
+	 * @param rep_date reporting date
+	 * @param recon_time time when executed report
+	 * @param key_headers String[] list of column name which are comparing key
 	 * @throws Exception
+	 * 
 	 */
 	public static void execute(String rep_id, String rep_date, String recon_time, String[] key_headers) throws Exception {
 		List<String> list_headers = new ArrayList<String>(Arrays.asList(key_headers));
@@ -124,17 +130,18 @@ public class TagProcess {
 	public static void getTagByKeyColumn(List<String> key_headers) throws Exception {
 		List<String[]> mm_result = new ArrayList<>();
 		List<TaggedObj> mm_table, table_result = new ArrayList<>();
-		HashMap<String, String> key_val = null;
-		List<String> mod_key_head = HeaderMap.MapHeaderToColumn(key_headers);
+		List<String> mod_key_head = HeaderMap.MapHeaderToColumn(key_headers); //Normalize header name
 
 		ExcelUtils utl = ExcelUtils.getInstance();
 		utl.set_splitter(IConstants.CSV_SPLIT);
 		utl.set_sheet_id(2);
 
-		// ExcelReader reader = new ExcelReader();
-		// mm_result = reader.readData(IConstants.FILE_PATH, utl);
-		mm_result = readFromDb(reportId, reportingDate, reconTime);
-		mm_table = extractMismatchColumn(mm_result);
+		/* ExcelReader reader = new ExcelReader();
+		 mm_result = reader.readData(IConstants.FILE_PATH, utl);*/
+		
+		
+		mm_result = readFromDb(reportId, reportingDate, reconTime); //read data from DB and store in list of String array
+		mm_table = extractMismatchColumn(mm_result); // transform mismatch data to Tagged Object
 
 		ThreadTag[] threads = new ThreadTag[MAX_THREAD];
 
@@ -163,24 +170,26 @@ public class TagProcess {
 		List<String[]> output = new ArrayList<String[]>();
 		
 
-		// Config excel file
-		// ExcelWriter writer = new ExcelWriter();
-		// utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
+		/* Config excel file
+		 ExcelWriter writer = new ExcelWriter();
+		 utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);*/
 
 		// Prepare header
 		exportHeader.addAll(1, key_headers);
 		output.add(exportHeader.toArray(new String[0]));
-		output.addAll(table_result.parallelStream().map(m -> m.toString().split(";")).collect(Collectors.toList()));
-		// Format excel option
-		// ExcelFormat format = new ExcelFormat();
-		// format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
-		// format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
-		// format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
-		// format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
+		output.addAll(table_result.parallelStream().map(m -> m.toString().split("!")).collect(Collectors.toList()));
+		
+		
+		/* Format excel option
+		 ExcelFormat format = new ExcelFormat();
+		 format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
+		 format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
+		 format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
+		 format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
 
-		// Export to file
-		// utl.set_format(format);
-		// writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
+		 Export to file
+		 utl.set_format(format);
+		 writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);*/
 
 		
 		

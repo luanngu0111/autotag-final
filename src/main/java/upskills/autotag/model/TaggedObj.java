@@ -20,6 +20,7 @@ public class TaggedObj {
 	private String _field_name;
 	private boolean _systematic;
 	private List<String> _issues;
+	static final String _sep="!";
 
 	/**
 	 * 
@@ -132,18 +133,18 @@ public class TaggedObj {
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append(_selected ? "X" : "");
-		sb.append(";");
+		sb.append(_sep);
 
 		Set<Entry<String, String>> set = _disp_column.entrySet();
 		for (Entry<String, String> entry : set) {
 			sb.append(entry.getValue());
-			sb.append(";");
+			sb.append(_sep);
 		}
 		sb.append(_field_name);
-		sb.append(";");
+		sb.append(_sep);
 		sb.append(_systematic ? "Y" : "N");
-		sb.append(";");
-		sb.append(String.join(";", _issues));
+		sb.append(_sep);
+		sb.append(String.join(_sep, _issues));
 
 		return sb.toString();
 	}
