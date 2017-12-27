@@ -170,24 +170,25 @@ public class TagProcess {
 		List<String[]> output = new ArrayList<String[]>();
 		
 
-		/* Config excel file
+//		Config excel file
 		 ExcelWriter writer = new ExcelWriter();
-		 utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);*/
+		 utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
 
 		// Prepare header
 		exportHeader.addAll(1, key_headers);
 		output.add(exportHeader.toArray(new String[0]));
 		output.addAll(table_result.parallelStream().map(m -> m.toString().split("!")).collect(Collectors.toList()));
 		
-		
-		/* Format excel option
+		/*int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
+		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
+				Format excel option
 		 ExcelFormat format = new ExcelFormat();
 		 format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
 		 format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
 		 format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
 		 format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
 
-		 Export to file
+			 Export to file
 		 utl.set_format(format);
 		 writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);*/
 
@@ -204,6 +205,10 @@ public class TagProcess {
 				.collect(Collectors.toList()));
 		service.saveToMongoDB(ao);
 
+		
+		//Export to file
+		printExcelFile(output);
+		
 		System.out.print((new Date()).toString());
 	}
 
@@ -223,5 +228,26 @@ public class TagProcess {
 
 		getTagByKeyColumn(key_headers);
 
+	}
+	
+	private static void printExcelFile(List<String[]> output) throws Exception
+	{
+		// Config excel file
+		ExcelWriter writer = new ExcelWriter();
+		ExcelUtils utl = ExcelUtils.getInstance();
+		utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
+
+		int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
+		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
+		// Format excel option
+		ExcelFormat format = new ExcelFormat();
+		format.setBorderCell(true, true, true, true, BorderStyle.MEDIUM);
+		format.mergeCell(0, 0, 0, pivot_start - 1, "MisMatch");
+		format.mergeCell(0, 0, pivot_start, pivot_end, "Auto-Tagging");
+		format.mergeCell(0, 0, pivot_end + 1, pivot_end + 2, "User Input");
+
+		// Export to file
+		utl.set_format(format);
+		writer.writeData(output, IConstants.EXPORT_EXCEL_FILE, utl);
 	}
 }

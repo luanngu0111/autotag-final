@@ -17,7 +17,7 @@ public class IConstants {
 	public static String HEADER_INS = "INSTRUMENT";
 	public static String HEADER_STATUS = "TRN_STATUS";
 	public static String HEADER_KEY_VAL = "KeyValue";
-	public static String EXPORT_EXCEL_FILE = "export/20K trades only 3 selected.xlsx";
+	public static String EXPORT_EXCEL_FILE = "export/test.xlsx";
 	public static String AUTOTAG_TABLE = "AutoTagOutput";
 	public static String EXCEL_SHEET_NAME = "Result 0";
 	public static String EXCEL_EXPORT_SHEET = "AUTO-TAGGING";
