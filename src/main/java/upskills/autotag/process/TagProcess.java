@@ -241,7 +241,7 @@ public class TagProcess {
 		// Config excel file
 		ExcelWriter writer = new ExcelWriter();
 		ExcelUtils utl = ExcelUtils.getInstance();
-		utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
+		//utl.set_sheet_name(IConstants.EXCEL_EXPORT_SHEET);
 
 		int pivot_start = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[3]);
 		int pivot_end = exportHeader.indexOf(IConstants.EXPORT_HEADER_NEUTRAL[12]);
